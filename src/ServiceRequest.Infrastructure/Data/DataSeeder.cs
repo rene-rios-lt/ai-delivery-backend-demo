@@ -31,13 +31,13 @@ public class DataSeeder(IServiceScopeFactory scopeFactory) : IHostedService
         await db.Users.AddRangeAsync(users, ct);
         await db.SaveChangesAsync(ct);
 
-        var statuses = new[]
+        // 43 requests spread across statuses — enough to exercise DataGrid pagination (page size 10)
+        var statuses = Enumerable.Range(0, 43).Select(i => i switch
         {
-            RequestStatus.Open, RequestStatus.Open, RequestStatus.Open,
-            RequestStatus.InProgress, RequestStatus.InProgress,
-            RequestStatus.InProgress, RequestStatus.InProgress,
-            RequestStatus.Completed, RequestStatus.Completed, RequestStatus.Completed
-        };
+            < 15 => RequestStatus.Open,
+            < 30 => RequestStatus.InProgress,
+            _    => RequestStatus.Completed,
+        }).ToArray();
 
         var requests = statuses.Select((status, i) => new ServiceRequestEntity
         {
@@ -48,7 +48,7 @@ public class DataSeeder(IServiceScopeFactory scopeFactory) : IHostedService
             Priority    = faker.PickRandom<Priority>(),
             RequesterId = faker.PickRandom(users).Id,
             RequesteeId = faker.PickRandom(users).Id,
-            CreatedAt   = DateTime.UtcNow.AddDays(-(10 - i)),
+            CreatedAt   = DateTime.UtcNow.AddDays(-(43 - i)),
             UpdatedAt   = DateTime.UtcNow
         }).ToList();
 
