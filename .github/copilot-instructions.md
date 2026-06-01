@@ -1,6 +1,6 @@
 # Copilot Instructions — service-request-api
 
-.NET 8 / C# REST API following Clean Architecture. PostgreSQL via EF Core. Runs locally with Docker Compose.
+.NET 9 / C# REST API following Clean Architecture. PostgreSQL via EF Core. Runs locally with Docker Compose.
 
 ---
 
