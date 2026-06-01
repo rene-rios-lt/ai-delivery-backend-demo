@@ -226,4 +226,33 @@ public class ServiceRequestsControllerTests : IClassFixture<ServiceRequestApiFac
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
+
+    [Fact]
+    public async Task Put_WhenDescriptionUpdated_Returns200WithUpdatedBody()
+    {
+        var seededId = await _factory.SeedRequestAsync(_factory.RequesterId, _factory.RequesteeId);
+
+        var updateDto = new UpdateServiceRequestDto(null, "Updated description", null, null, null);
+        var response  = await _client.PutAsJsonAsync($"/api/service-requests/{seededId}", updateDto);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await response.Content.ReadFromJsonAsync<ServiceRequestDto>();
+        body.Should().NotBeNull();
+        body!.Description.Should().Be("Updated description");
+    }
+
+    [Fact]
+    public async Task Post_WhenTitleIsMissing_Returns400()
+    {
+        var response = await _client.PostAsJsonAsync("/api/service-requests", new
+        {
+            title      = (string?)null,
+            priority   = 0,
+            requesterId = _factory.RequesterId,
+            requesteeId = _factory.RequesteeId,
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
 }

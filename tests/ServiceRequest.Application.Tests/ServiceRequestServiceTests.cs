@@ -190,4 +190,49 @@ public class ServiceRequestServiceTests
 
         result.Should().BeFalse();
     }
+
+    [Fact]
+    public async Task CreateAsync_SetsStatusToOpen()
+    {
+        var requester = MakeUser("Alice");
+        var requestee = MakeUser("Bob");
+        ServiceRequestEntity? captured = null;
+
+        var dto = new CreateServiceRequestDto("New request", null, Priority.Low, requester.Id, requestee.Id);
+
+        _repository
+            .CreateAsync(Arg.Do<ServiceRequestEntity>(e => captured = e), Arg.Any<CancellationToken>())
+            .Returns(new ServiceRequestEntity
+            {
+                Title       = dto.Title,
+                Status      = RequestStatus.Open,
+                Priority    = dto.Priority,
+                RequesterId = dto.RequesterId,
+                Requester   = requester,
+                RequesteeId = dto.RequesteeId,
+                Requestee   = requestee,
+            });
+
+        await _sut.CreateAsync(dto);
+
+        captured.Should().NotBeNull();
+        captured!.Status.Should().Be(RequestStatus.Open);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenStatusChanged_AppliesStatusTransition()
+    {
+        var requester = MakeUser("Alice");
+        var requestee = MakeUser("Bob");
+        var entity    = MakeEntity(requester, requestee); // Status defaults to Open
+
+        _repository
+            .UpdateAsync(entity.Id, Arg.Do<Action<ServiceRequestEntity>>(a => a(entity)), Arg.Any<CancellationToken>())
+            .Returns(_ => entity);
+
+        var dto = new UpdateServiceRequestDto(null, null, RequestStatus.Completed, null, null);
+        await _sut.UpdateAsync(entity.Id, dto);
+
+        entity.Status.Should().Be(RequestStatus.Completed);
+    }
 }

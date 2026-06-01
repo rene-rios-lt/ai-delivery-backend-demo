@@ -1,9 +1,10 @@
+using System.ComponentModel.DataAnnotations;
 using ServiceRequest.Domain.Enums;
 
 namespace ServiceRequest.Application.DTOs;
 
 public record CreateServiceRequestDto(
-    string Title,
+    [Required] string Title,
     string? Description,
     Priority Priority,
     Guid RequesterId,
