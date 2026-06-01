@@ -49,6 +49,4 @@ public class ServiceRequestRepository(AppDbContext db) : IServiceRequestReposito
         return true;
     }
 
-    public Task<bool> UserExistsAsync(Guid userId, CancellationToken ct = default) =>
-        db.Users.AnyAsync(u => u.Id == userId, ct);
 }

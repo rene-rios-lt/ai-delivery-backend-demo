@@ -1,7 +1,6 @@
 using ServiceRequest.Application.DTOs;
 using ServiceRequest.Application.Interfaces;
 using ServiceRequest.Domain.Entities;
-using ServiceRequest.Domain.Enums;
 
 namespace ServiceRequest.Application.Services;
 
@@ -60,8 +59,6 @@ public class ServiceRequestService(IServiceRequestRepository repository)
         e.Id,
         e.Title,
         e.Description,
-        e.Status,
-        e.Priority,
         e.RequesterId,
         e.Requester?.Name ?? string.Empty,
         e.RequesteeId,
