@@ -144,8 +144,7 @@ public class ServiceRequestsControllerTests : IClassFixture<ServiceRequestApiFac
 
         var body = await response.Content.ReadFromJsonAsync<List<ServiceRequestDto>>();
         body.Should().NotBeNull();
-        body!.Count.Should().BeLessThanOrEqualTo(3);
-        body.Count.Should().Be(3);
+        body!.Count.Should().Be(3);
     }
 
     [Fact]
