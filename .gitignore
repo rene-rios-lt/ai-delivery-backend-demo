@@ -1,0 +1,52 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.vscode/
+*.swp
+.DS_Store
+
+## NuGet
+*.nupkg
+*.snupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Build outputs
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## .NET CLI
+*.trx
+TestResults/
+coverage/
+lcov.info
+
+## Docker
+.dockerignore
+
+## User-specific
+*.userosscache
+*.sln.docstates
+
+## Rider
+.idea/
+*.DotSettings.user
+
+## Environment
+.env
+.env.local
+appsettings.Local.json
