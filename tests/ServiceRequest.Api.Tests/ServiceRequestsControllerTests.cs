@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using DotNet.Testcontainers.Builders;
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
@@ -29,6 +31,12 @@ public class ServiceRequestApiFactory : WebApplicationFactory<Program>, IAsyncLi
 
     public Guid RequesterId  { get; private set; }
     public Guid RequesteeId  { get; private set; }
+
+    // Matches the production API's JSON serialization options (enums as strings)
+    public static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        Converters = { new JsonStringEnumConverter() }
+    };
 
     public async Task InitializeAsync()
     {
@@ -81,7 +89,8 @@ public class ServiceRequestApiFactory : WebApplicationFactory<Program>, IAsyncLi
         RequesteeId = requestee.Id;
     }
 
-    public async Task<Guid> SeedRequestAsync(Guid requesterId, Guid requesteeId)
+    public async Task<Guid> SeedRequestAsync(Guid requesterId, Guid requesteeId,
+        RequestStatus status = RequestStatus.Open)
     {
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -91,7 +100,7 @@ public class ServiceRequestApiFactory : WebApplicationFactory<Program>, IAsyncLi
             Id          = Guid.NewGuid(),
             Title       = "Seeded Request",
             Description = "Seeded for testing",
-            Status      = RequestStatus.Open,
+            Status      = status,
             Priority    = Priority.Medium,
             RequesterId = requesterId,
             RequesteeId = requesteeId,
@@ -126,7 +135,7 @@ public class ServiceRequestsControllerTests : IClassFixture<ServiceRequestApiFac
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var body = await response.Content.ReadFromJsonAsync<List<ServiceRequestDto>>();
+        var body = await response.Content.ReadFromJsonAsync<List<ServiceRequestDto>>(ServiceRequestApiFactory.JsonOptions);
         body.Should().NotBeNull();
         body!.Count.Should().BeGreaterThan(0);
     }
@@ -142,7 +151,7 @@ public class ServiceRequestsControllerTests : IClassFixture<ServiceRequestApiFac
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var body = await response.Content.ReadFromJsonAsync<List<ServiceRequestDto>>();
+        var body = await response.Content.ReadFromJsonAsync<List<ServiceRequestDto>>(ServiceRequestApiFactory.JsonOptions);
         body.Should().NotBeNull();
         body!.Count.Should().Be(3);
     }
@@ -162,7 +171,7 @@ public class ServiceRequestsControllerTests : IClassFixture<ServiceRequestApiFac
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var created = await response.Content.ReadFromJsonAsync<ServiceRequestDto>();
+        var created = await response.Content.ReadFromJsonAsync<ServiceRequestDto>(ServiceRequestApiFactory.JsonOptions);
         created.Should().NotBeNull();
         created!.Title.Should().Be("Integration test request");
     }
@@ -176,7 +185,7 @@ public class ServiceRequestsControllerTests : IClassFixture<ServiceRequestApiFac
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var body = await response.Content.ReadFromJsonAsync<ServiceRequestDto>();
+        var body = await response.Content.ReadFromJsonAsync<ServiceRequestDto>(ServiceRequestApiFactory.JsonOptions);
         body.Should().NotBeNull();
         body!.Id.Should().Be(seededId);
         body.Title.Should().Be("Seeded Request");
@@ -202,7 +211,7 @@ public class ServiceRequestsControllerTests : IClassFixture<ServiceRequestApiFac
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var body = await response.Content.ReadFromJsonAsync<ServiceRequestDto>();
+        var body = await response.Content.ReadFromJsonAsync<ServiceRequestDto>(ServiceRequestApiFactory.JsonOptions);
         body.Should().NotBeNull();
         body!.Title.Should().Be("Updated Title");
     }
@@ -237,7 +246,7 @@ public class ServiceRequestsControllerTests : IClassFixture<ServiceRequestApiFac
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var body = await response.Content.ReadFromJsonAsync<ServiceRequestDto>();
+        var body = await response.Content.ReadFromJsonAsync<ServiceRequestDto>(ServiceRequestApiFactory.JsonOptions);
         body.Should().NotBeNull();
         body!.Description.Should().Be("Updated description");
     }
@@ -254,5 +263,25 @@ public class ServiceRequestsControllerTests : IClassFixture<ServiceRequestApiFac
         });
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task GetById_ReturnsStatusAsStringInResponse()
+    {
+        // Seed with a non-default status to avoid false-positive (default Open = 0 would
+        // deserialize correctly even if the field were a number)
+        var seededId = await _factory.SeedRequestAsync(
+            _factory.RequesterId, _factory.RequesteeId, RequestStatus.InProgress);
+
+        var response = await _client.GetAsync($"/api/service-requests/{seededId}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var content = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(content);
+        var statusElement = doc.RootElement.GetProperty("status");
+
+        statusElement.ValueKind.Should().Be(JsonValueKind.String, "status must be serialized as a string, not an integer");
+        statusElement.GetString().Should().Be("InProgress");
     }
 }
