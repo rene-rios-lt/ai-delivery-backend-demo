@@ -192,6 +192,36 @@ public class ServiceRequestServiceTests
     }
 
     [Fact]
+    public async Task GetAllAsync_MapsStatusToDto()
+    {
+        var requester = MakeUser("Alice");
+        var requestee = MakeUser("Bob");
+        var entity    = MakeEntity(requester, requestee);
+        entity.Status = RequestStatus.InProgress;
+        _repository.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new[] { entity });
+
+        var result = await _sut.GetAllAsync();
+
+        result.Should().HaveCount(1);
+        result.First().Status.Should().Be(RequestStatus.InProgress);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_MapsStatusToDto()
+    {
+        var requester = MakeUser("Alice");
+        var requestee = MakeUser("Bob");
+        var entity    = MakeEntity(requester, requestee);
+        entity.Status = RequestStatus.Completed;
+        _repository.GetByIdAsync(entity.Id, Arg.Any<CancellationToken>()).Returns(entity);
+
+        var result = await _sut.GetByIdAsync(entity.Id);
+
+        result.Should().NotBeNull();
+        result!.Status.Should().Be(RequestStatus.Completed);
+    }
+
+    [Fact]
     public async Task CreateAsync_SetsStatusToOpen()
     {
         var requester = MakeUser("Alice");

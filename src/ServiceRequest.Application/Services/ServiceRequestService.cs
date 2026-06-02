@@ -64,6 +64,7 @@ public class ServiceRequestService(IServiceRequestRepository repository)
         e.RequesteeId,
         e.Requestee?.Name ?? string.Empty,
         e.CreatedAt,
-        e.UpdatedAt
+        e.UpdatedAt,
+        e.Status
     );
 }

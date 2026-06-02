@@ -1,3 +1,5 @@
+using ServiceRequest.Domain.Enums;
+
 namespace ServiceRequest.Application.DTOs;
 
 public record ServiceRequestDto(
@@ -9,5 +11,6 @@ public record ServiceRequestDto(
     Guid RequesteeId,
     string RequesteeName,
     DateTime CreatedAt,
-    DateTime UpdatedAt
+    DateTime UpdatedAt,
+    RequestStatus Status
 );
